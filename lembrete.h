@@ -17,6 +17,8 @@ int getLastTask(int modo);
 int tExists(char tUsuario[32], char tNome[128], int modo);
 int modificarTarefa(int id_var, char what[50], char str[128]);
 int excluirTarefa(char tUsuario[32], char tNome[128]);
+int excluirTodasTarefas(char usuario[128]);
+int validarDatav2(int dia, int mes, int ano, int hora, int minuto);
 
 //Funções externas
 extern int vData(int dia, int mes, int ano);
@@ -29,3 +31,5 @@ extern void Msg(char msg[256]);
 extern void telaSobre();
 extern int login;
 extern int abrirArquivo(char Arquivo[128], char* StrF);
+extern int alterarUsuario(int id, char what[128], char campo[256]);
+extern int excluirUsuario(char usuario[32]);

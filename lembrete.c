@@ -11,8 +11,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "lembrete.h"
 #include "Projeto.h"
+#include "utilidades.h"
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -82,6 +84,14 @@ void Lembretes(int id_menu)
                         continue;
                     }
                     etapa++;
+
+                    if(validarDatav2(dia, mes, ano, hora, minuto) != 1)
+                    {
+                        Msg("A data/hora informada é inferior a data de hoje!");
+                        etapa = 1;
+                        continue;
+                    }
+
                     break;
                 }
                 else{
@@ -285,28 +295,194 @@ void Lembretes(int id_menu)
 
         case 3: //Meus dados
         {
-            int e;
+            int e, e2, eInt1, eInt2, eInt3;
+            char eStr[128];
 
-            while(1)
-            {
-                titulo("///          = = = = = = = =  Minhas Informações  = = = = = = = =         ///");
-                printf("\n\t Nome: %s", Usuarios[login].nome);
-                printf("\n\t Usuário: %s", Usuarios[login].usuario);
-                printf("\n\t Celular: %s", Usuarios[login].celular);
-                printf("\n\t Cidade: %s", Usuarios[login].cidade);
-                printf("\n\t Endereço: %s", Usuarios[login].endereco);
-                printf("\n\t Data de Nascimento: %d/%d/%d\n", Usuarios[login].nascimento.dia, Usuarios[login].nascimento.mes, Usuarios[login].nascimento.ano);
+            titulo("///          = = = = = = = =  Minhas Informações  = = = = = = = =         ///");
+            printf("\n\t Nome: %s", Usuarios[login].nome);
+            printf("\n\t Usuário: %s", Usuarios[login].usuario);
+            printf("\n\t Celular: %s", Usuarios[login].celular);
+            printf("\n\t Cidade: %s", Usuarios[login].cidade);
+            printf("\n\t Endereço: %s", Usuarios[login].endereco);
+            printf("\n\t Data de Nascimento: %d/%d/%d\n", Usuarios[login].nascimento.dia, Usuarios[login].nascimento.mes, Usuarios[login].nascimento.ano);
 
-                printf("\n\t [1]: Editar informações");
-                printf("\n\t [2]: Excluir minha conta");
-                printf("\n\t [0]: Cancelar");
+            printf("\n\t [1]: Editar informações");
+            printf("\n\t [2]: Excluir minha conta");
+            printf("\n\t [0]: Cancelar");
 
-                printf("\n\n\t Informe sua escolha (0-2): ");
-                scanf("%d", &e);
+            printf("\n\n\t Informe sua escolha (0-2): ");
+            scanf("%d", &e);
 
+            if(e >= 1 && e <= 2) {
                 
+                etapa = 0;
+
+                while(1)
+                {
+                    titulo("///          = = = = = = = =  Minhas Informações  = = = = = = = =         ///");
+
+                    limpar();
+                    if(e == 1) //Editar Informações
+                    {
+                        if(etapa == 0)
+                        {
+                            printf("\n\t [1]: Alterar Nome (%s)", Usuarios[login].nome);
+                            printf("\n\t [2]: Alterar Senha");
+                            printf("\n\t [3]: Alterar Celular (%s)", Usuarios[login].celular);
+                            printf("\n\t [4]: Alterar Cidade (%s)", Usuarios[login].cidade);
+                            printf("\n\t [5]: Alterar Endereço (%s)", Usuarios[login].endereco);
+                            printf("\n\t [6]: Alterar Data de Nascimento (%d/%d/%d)", Usuarios[login].nascimento.dia, Usuarios[login].nascimento.mes, Usuarios[login].nascimento.ano);
+                            printf("\n\t [0]: Cancelar \n");
+
+                            printf("\n\t Informe sua escolha (1-6): ");
+                            scanf("%d", &e2);
+
+                            if(e2 >= 1 && e2 <= 6) {
+                                etapa = e2;
+                                continue;
+                            }
+                            else {
+                                break;
+                            }
+                        }
+                        else if(etapa == 1) //nome
+                        {
+                            printf("\n\t Informe seu nome e sobrenome: ");
+                            if(scanf("%[A-ZÁÉÍÓÚÂÊÔÇÀÃÕ a-záéíóúâêôçàãõ]", eStr) != 1) {
+                                Msg("Nome inválido.");
+                                continue;
+                            }
+
+                            if(alterarUsuario(login, "nome", eStr) != 1) {
+                                Msg("Não foi possível alterar esse usuário.");
+                            }
+                        }
+                        else if(etapa == 2) //Senha
+                        {
+                            printf("\n\t Informe sua senha atual: ");
+                            if(scanf("%[A-ZÁÉÍÓÚÂÊÔÇÀÃÕ a-záéíóúâêôçàãõ.,@#$()0-9]", eStr) != 1) {
+                                Msg("Senha inválida.");
+                                continue;
+                            }
+
+                            if (strcmp(eStr, Usuarios[login].senha) == 0)
+                            {
+                                limpar();
+                                printf("\n\t Informe sua nova senha: ");
+                                if(scanf("%[A-ZÁÉÍÓÚÂÊÔÇÀÃÕ a-záéíóúâêôçàãõ.,@#$()0-9]", eStr) != 1) {
+                                    Msg("Senha inválida.");
+                                    continue;
+                                }
+
+                                if(alterarUsuario(login, "senha", eStr) != 1) {
+                                    Msg("Não foi possível alterar esse usuário.");
+                                }
+
+                            }
+                            else
+                            {
+                                Msg("Senha inválida.");
+                                continue;
+                            }
+                        }
+                        else if(etapa == 3) //Celular
+                        {
+                            printf("\n\t Informe seu número de celular (somente números): ");
+                            if((scanf("%[0-9]", eStr) != 1) || (strlen(eStr) != 11)) {
+                                Msg("Número de celular inválido.");
+                                continue;
+                            }
+
+                            if(alterarUsuario(login, "celular", eStr) != 1) {
+                                Msg("Não foi possível alterar esse usuário.");
+                            }
+                        }
+                        else if(etapa == 4) //Cidade
+                        {
+                            printf("\n\t Informe a cidade que você reside: ");
+                            if(scanf("%[A-ZÁÉÍÓÚÂÊÔÇÀÃÕ a-záéíóúâêôçàãõ]", eStr) != 1) {
+                                Msg("Cidade inválida.");
+                                continue;
+                            }
+
+                            if(alterarUsuario(login, "cidade", eStr) != 1) {
+                                Msg("Não foi possível alterar esse usuário.");
+                            }
+                        }
+                        else if(etapa == 5) //Endereço
+                        {
+                            printf("\n\t Informe seu endereço: ");
+                            if(scanf("%[A-ZÁÉÍÓÚÂÊÔÇÀÃÕ a-záéíóúâêôçàãõ.,0-9]", eStr) != 1) {
+                                Msg("Endereço inválido.");
+                                continue;
+                            }
+
+                            if(alterarUsuario(login, "endereco", eStr) != 1) {
+                                Msg("Não foi possível alterar esse usuário.");
+                            }
+                        }
+                        else if(etapa == 6) //Data de Nascimento
+                        {
+                            printf("\t Informe sua data de nascimento (Exemplo: 15/02/1995): ");
+                            scanf("%d/%d/%d", &eInt1, &eInt2, &eInt3);
+
+                            if((vData(eInt1, eInt2, eInt3) == 0)) {
+                                Msg("Data inválida.");
+                                continue;
+                            }
+
+                            sprintf(eStr, "%d", eInt1);
+                            if(alterarUsuario(login, "dia", eStr) != 1) {
+                                Msg("Não foi possível alterar esse usuário.");
+                            }
+
+                            sprintf(eStr, "%d", eInt2);
+                            if(alterarUsuario(login, "mes", eStr) != 1) {
+                                Msg("Não foi possível alterar esse usuário.");
+                            }
+
+                            sprintf(eStr, "%d", eInt3);
+                            if(alterarUsuario(login, "ano", eStr) != 1) {
+                                Msg("Não foi possível alterar esse usuário.");
+                            }
+
+                        }
+
+                        etapa = 0;
+                        continue;
+
+                        //alterarUsuario(login, "nome", campo);
+                    }
+                    else //Excluir minha conta
+                    {
+                        printf("\n\t Informe sua senha atual: ");
+                        if(scanf("%[A-ZÁÉÍÓÚÂÊÔÇÀÃÕ a-záéíóúâêôçàãõ.,@#$()0-9]", eStr) != 1) {
+                            Msg("Senha inválida.");
+                            continue;
+                        }
+
+                        if (strcmp(eStr, Usuarios[login].senha) != 0) {
+                            Msg("Senha inválida.");
+                            continue;
+                        }
+
+                        eInt1 = excluirTodasTarefas(Usuarios[login].usuario);
+
+                        if(eInt1 != -1) {
+                            printf("\n\t %d tarefas encontradas e excluídas.", eInt1);
+                            Sleep(1500);
+                        }
+
+                        if(excluirUsuario(Usuarios[login].usuario) != 1) {
+                            Msg("Não foi possível excluir sua conta, tente novamente mais tarde.");
+                        }
+
+                        break;
+                    }
+                }
+
             }
-            
+            menu = 0;
         }
         break;
 
@@ -333,6 +509,40 @@ int excluirTarefa(char tUsuario[32], char tNome[128])
     strcpy(Tarefas[id_var].nome, "$");
     strcpy(Tarefas[id_var].usuario, "$");
     return 1;
+}
+
+int excluirTodasTarefas(char usuario[128])
+{
+    char Lukas[256], nome_arquivo[50], strObtida[256], *token;
+    int i, x = 0, valor = -1;
+
+    for(i = 0; i < MAX_TAREFAS; i++)
+    {
+        x = 0;
+
+        sprintf(nome_arquivo, PASTA_TAREFAS, i);
+        if(abrirArquivo(nome_arquivo, Lukas))
+        {
+            token = strtok(Lukas, "\n");
+            while( token != NULL )
+            {
+                sprintf(strObtida, "%s", token);
+                
+                if(x == 0 && strcmp(usuario, strObtida) == 0) //Nome de usuário
+                {
+                    remove(nome_arquivo);
+                    
+                    if(valor == -1) valor = 1;
+                    else valor++;
+
+                }
+
+                token = strtok(NULL, "\n");
+                x++;
+            }
+        }
+    }
+    return valor;
 }
 
 int tExists(char tUsuario[32], char tNome[128], int modo)
@@ -600,4 +810,50 @@ int registrarTarefa(char tUsuario[32], char tNome[128], int tDia, int tMes, int 
         return 1;
     }
     return 0;
+}
+
+int validarDatav2(int dia, int mes, int ano, int hora, int minuto)
+{
+    if(vData(dia, mes, ano) != 1){
+        return 0;
+    }
+
+    if(vHora(hora, minuto) != 1) {
+        return 0;
+    }
+
+    struct tm *now;     
+    time_t segundos;
+
+    time(&segundos);
+    now = localtime(&segundos);
+
+    int d = now->tm_mday;
+    int m = now->tm_mon+1;
+    int a = now->tm_year+1900;
+    int hr = now->tm_hour;
+    int min = now->tm_min;
+
+    if(ano >= a)
+    {
+        if(mes >= m)
+        {
+            if(dia >= d)
+            {
+                if(hora >= hr)
+                {
+                    if(minuto > min)
+                    {
+                        return 1;
+                    }
+                    else return 0;
+                }
+                else return 0;
+            }
+            else return 0;
+        }
+        else return 0;
+    }
+    else return 0;
+    
 }

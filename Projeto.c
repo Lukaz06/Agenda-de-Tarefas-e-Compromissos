@@ -11,7 +11,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "lembrete.h"
+#include "utilidades.h"
 #include "Projeto.h"
 
 #ifdef _WIN32
@@ -29,18 +31,20 @@ void telaSobre();
 void telaPrincipal();
 void telaLogin();
 void titulo(char title[128]);
-int vData(int dia, int mes, int ano);
-int vHora(int hora, int min);
 void limpar(void);
 void criar_menu(int opcoes, int soma);
 void Msg(char msg[256]);
 int abrirArquivo(char Arquivo[128], char* StrF);
+void pausa(int seg);
 
 //Funções de Usuários
 void registrarUsuario(char rNome[128], char rCelular[12], char rCidade[128], char rEndereco[128], char rUsername[32], char rSenha[128], int rDia, int rMes, int rAno, int rMod);
 int getLastUser(int modo);
 void carregarUsuarios();
 void LoginUsuario(int id);
+int uExists(char usuario[128], int modo);
+int alterarUsuario(int id, char what[128], char campo[256]);
+int excluirUsuario(char usuario[32]);
 
 //Funções externas
 extern void Lembretes(int id_menu);
@@ -49,14 +53,16 @@ struct tarefasEstrutura Tarefas[MAX_TAREFAS];
 extern void carregarLembretes();
 extern void verTarefas();
 extern int contTasks(char usuario[128]);
+extern int vData(int dia, int mes, int ano);
+extern int vHora(int hora, int min);
 
 //Variáveis
 int menu = 0;
-int login = 0;
+int login = -1;
 
 // CódigoPrincipal
 int main() {
-    
+
     carregarUsuarios();
     carregarLembretes();
 
@@ -151,7 +157,7 @@ void LoginUsuario(int id)
         {
             etapa = 0;
 
-            char rNome[128], rCelular[12], rCidade[128], rEndereco[128], rUsername[32], rSenha[128];
+            char rNome[128], rCelular[12], rCidade[128], rEndereco[128], rUsername[128], rSenha[128];
             int dia, mes, ano, decisao;
 
             while (1)
@@ -167,11 +173,17 @@ void LoginUsuario(int id)
                         Msg("Nome inválido.");
                         continue;
                     }
+
+                    if(strlen(rNome) >= 100) {
+                        Msg("O limite máximo de caracteres é 100.");
+                        continue;
+                    }
+
                     etapa++;
                 }
                 else if(etapa == 1) //Data de Nascimento
                 {
-                    printf("\t Informe sua data de nascimento (Exemplo: 17/09/1997): ");
+                    printf("\t Informe sua data de nascimento (Exemplo: 15/02/1995): ");
                     scanf("%d/%d/%d", &dia, &mes, &ano);
 
                     if((vData(dia, mes, ano) == 0)) {
@@ -196,6 +208,11 @@ void LoginUsuario(int id)
                         Msg("Cidade inválida.");
                         continue;
                     }
+
+                    if(strlen(rCidade) >= 120) {
+                        Msg("O limite máximo de caracteres é 120.");
+                        continue;
+                    }
                     etapa++;
                 }
                 else if(etapa == 4) //Endereço
@@ -205,6 +222,12 @@ void LoginUsuario(int id)
                         Msg("Endereço inválido.");
                         continue;
                     }
+
+                    if(strlen(rSenha) >= 120) {
+                        Msg("O limite máximo de caracteres é 120.");
+                        continue;
+                    }
+
                     etapa++;
                 }
                 else if(etapa == 5) //Nome de usuário
@@ -214,6 +237,17 @@ void LoginUsuario(int id)
                         Msg("Usuário inválido.");
                         continue;
                     }
+
+                    if(uExists(rUsername, 0) != -1) {
+                        Msg("Usuário já cadastrado no sistema.");
+                        continue;
+                    }
+
+                    if(strlen(rUsername) >= 32) {
+                        Msg("O limite máximo de caracteres é 32.");
+                        continue;
+                    }
+
                     etapa++;
                 }
                 else if(etapa == 6) //Senha
@@ -223,6 +257,12 @@ void LoginUsuario(int id)
                         Msg("Senha inválida.");
                         continue;
                     }
+
+                    if(strlen(rSenha) >= 40) {
+                        Msg("O limite máximo de caracteres é 40.");
+                        continue;
+                    }
+
                     break;
                 }
             }
@@ -335,39 +375,6 @@ void telaSobre() {
     menu = 0;
 }
 
-//Função de validação de datas
-int vData(int dia, int mes, int ano) {
-    if (ano >= 1900 && ano <= 9999) {
-        if (mes >= 1 && mes <= 12) {
-            if ((dia >= 1 && dia <= 31) && (mes == 1 || mes == 3 || mes == 5 || mes == 7 || mes == 8 || mes == 10 || mes == 12))
-                return 1;
-            else if ((dia >= 1 && dia <= 30) && (mes == 4 || mes == 6 || mes == 9 || mes == 11))
-                return 1;
-            else if ((dia >= 1 && dia <= 28) && (mes == 2))
-                return 1;
-            else if (dia == 29 && mes == 2 && (ano % 400 == 0 || (ano % 4 == 0 && ano % 100 != 0)))
-                return 1;
-            else
-                return 0;
-        }
-        else return 0;
-    }
-    return 0;
-}
-
-//Função de validação de hora
-int vHora(int hora, int min)
-{
-    if(hora >= 0 && hora <= 23)
-    {
-        if(min >= 0 && min <= 59)
-            return 1;
-        else
-            return 0;
-    }
-    return 0;
-}
-
 void criar_menu(int opcoes, int soma)
 {
     int chose;
@@ -421,11 +428,106 @@ void Msg(char msg[256])
     Sleep(1500);
 }
 
+int uExists(char usuario[128], int modo)
+{
+    char Lukas[256], nome_arquivo[50], strObtida[256], *token;
+    int i, x = 0, valor = -1;
+
+    for(i = 0; i < MAX_USUARIOS; i++)
+    {
+        x = 0;
+
+        if(modo == 1) //Arquivo
+        {
+            sprintf(nome_arquivo, PASTA_USUARIOS, i);
+            if(abrirArquivo(nome_arquivo, Lukas))
+            {
+                token = strtok(Lukas, "\n");
+                while( token != NULL )
+                {
+                    sprintf(strObtida, "%s", token);
+
+                    if(x == 4) //Nome de usuário
+                    {
+                        if(strcmp(usuario, strObtida) == 0)
+                        {
+                            valor = i;
+                            break;
+                        }
+                    }
+                    token = strtok(NULL, "\n");
+                    x++;
+                }
+            }
+        }
+        else //Variável
+        {
+            if (strcmp(Usuarios[i].usuario, usuario) == 0)
+            {
+                valor = i;
+                break;
+            }
+        }
+    }
+    return valor;
+    
+}
+
+int alterarUsuario(int id, char what[128], char campo[256])
+{
+    int numerico;
+    char *tmpNumero[20];
+
+    if (strcmp(what, "nome") == 0) {
+        registrarUsuario(campo, Usuarios[id].celular, Usuarios[id].cidade, Usuarios[id].endereco, Usuarios[id].usuario, Usuarios[id].senha, Usuarios[id].nascimento.dia, Usuarios[id].nascimento.mes, Usuarios[id].nascimento.ano, Usuarios[id].mod);
+    } 
+    else if (strcmp(what, "celular") == 0) {
+        registrarUsuario(Usuarios[id].nome, campo, Usuarios[id].cidade, Usuarios[id].endereco, Usuarios[id].usuario, Usuarios[id].senha, Usuarios[id].nascimento.dia, Usuarios[id].nascimento.mes, Usuarios[id].nascimento.ano, Usuarios[id].mod);
+    }
+    else if (strcmp(what, "cidade") == 0) {
+        registrarUsuario(Usuarios[id].nome, Usuarios[id].celular, campo, Usuarios[id].endereco, Usuarios[id].usuario, Usuarios[id].senha, Usuarios[id].nascimento.dia, Usuarios[id].nascimento.mes, Usuarios[id].nascimento.ano, Usuarios[id].mod);
+    }
+    else if (strcmp(what, "endereco") == 0) {
+        registrarUsuario(Usuarios[id].nome, Usuarios[id].celular, Usuarios[id].cidade, campo, Usuarios[id].usuario, Usuarios[id].senha, Usuarios[id].nascimento.dia, Usuarios[id].nascimento.mes, Usuarios[id].nascimento.ano, Usuarios[id].mod);
+    }
+    else if (strcmp(what, "senha") == 0) {
+        registrarUsuario(Usuarios[id].nome, Usuarios[id].celular, Usuarios[id].cidade, Usuarios[id].endereco, Usuarios[id].usuario, campo, Usuarios[id].nascimento.dia, Usuarios[id].nascimento.mes, Usuarios[id].nascimento.ano, Usuarios[id].mod);
+    }
+    else if (strcmp(what, "dia") == 0) {
+        numerico = strtol(campo, tmpNumero, 10);
+        registrarUsuario(Usuarios[id].nome, Usuarios[id].celular, Usuarios[id].cidade, Usuarios[id].endereco, Usuarios[id].usuario, Usuarios[id].senha, numerico, Usuarios[id].nascimento.mes, Usuarios[id].nascimento.ano, Usuarios[id].mod);
+    }
+    else if (strcmp(what, "mes") == 0) {
+        numerico = strtol(campo, tmpNumero, 10);
+        registrarUsuario(Usuarios[id].nome, Usuarios[id].celular, Usuarios[id].cidade, Usuarios[id].endereco, Usuarios[id].usuario, Usuarios[id].senha, Usuarios[id].nascimento.dia, numerico, Usuarios[id].nascimento.ano, Usuarios[id].mod);
+    }
+    else if (strcmp(what, "ano") == 0) {
+        numerico = strtol(campo, tmpNumero, 10);
+        registrarUsuario(Usuarios[id].nome, Usuarios[id].celular, Usuarios[id].cidade, Usuarios[id].endereco, Usuarios[id].usuario, Usuarios[id].senha, Usuarios[id].nascimento.dia, Usuarios[id].nascimento.mes, numerico, Usuarios[id].mod);
+    }
+    else if (strcmp(what, "mod") == 0) {
+        numerico = strtol(campo, tmpNumero, 10);
+        registrarUsuario(Usuarios[id].nome, Usuarios[id].celular, Usuarios[id].cidade, Usuarios[id].endereco, Usuarios[id].usuario, Usuarios[id].senha, Usuarios[id].nascimento.dia, Usuarios[id].nascimento.mes, Usuarios[id].nascimento.ano, numerico);
+    }
+    else {
+        return 0;
+    }
+    return 1;
+}
+
 void registrarUsuario(char rNome[128], char rCelular[12], char rCidade[128], char rEndereco[128], char rUsername[32], char rSenha[128], int rDia, int rMes, int rAno, int rMod)
 {
+    int id_arq = uExists(rUsername, 1);
+
     char nome_arquivo[50];
     FILE *file; //Criando variável para manipulação de arquivos
-    sprintf(nome_arquivo, PASTA_USUARIOS, getLastUser(1));
+    
+    if(id_arq != -1) { //Usuário existe
+        sprintf(nome_arquivo, PASTA_USUARIOS, id_arq);
+    }
+    else { //Usuário não existe
+        sprintf(nome_arquivo, PASTA_USUARIOS, getLastUser(1));
+    }
     file = fopen(nome_arquivo, "w"); //Abrindo o arquivo
 
     fprintf(file, "%s\n", rNome); //Nome Completo
@@ -440,7 +542,11 @@ void registrarUsuario(char rNome[128], char rCelular[12], char rCidade[128], cha
     fprintf(file, "%d", rMod); //Nivel de moderação (1 ou 0)
     fclose(file); //Fechamento do arquivo
 
-    int id = getLastUser(0);
+    int id = uExists(rUsername, 0);
+    if(id == -1) {
+        id = getLastUser(0);
+    }
+
     strcpy(Usuarios[id].nome, rNome);
     strcpy(Usuarios[id].celular, rCelular);
     strcpy(Usuarios[id].cidade, rCidade);
@@ -483,6 +589,28 @@ int getLastUser(int modo)
         }
     }
     return i;
+}
+
+int excluirUsuario(char usuario[32])
+{
+    char nome_arquivo[50];
+    int id_arq = uExists(usuario, 1);
+    int id_var = uExists(usuario, 0);
+
+    if(id_arq == -1 || id_var == -1) {
+        return 0;
+    }
+
+    sprintf(nome_arquivo, PASTA_USUARIOS, id_arq);
+    remove(nome_arquivo);
+
+    strcpy(Usuarios[id_var].nome, "$");
+    strcpy(Usuarios[id_var].usuario, "$");
+    
+    if(id_var == login) {
+        login = -1;
+    }
+    return 1;
 }
 
 void carregarUsuarios(void)
@@ -564,3 +692,4 @@ int abrirArquivo(char Arquivo[128], char* StrF)
     fclose(file);
     return 1;
 }
+
