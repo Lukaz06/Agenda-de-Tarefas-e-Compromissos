@@ -35,7 +35,7 @@ void limpar(void);
 void criar_menu(int opcoes, int soma);
 void Msg(char msg[256]);
 int abrirArquivo(char Arquivo[128], char* StrF);
-void pausa(int seg);
+int openFile(char Arquivo[128]);
 
 //Funções de Usuários
 void registrarUsuario(char rNome[128], char rCelular[12], char rCidade[128], char rEndereco[128], char rUsername[32], char rSenha[128], int rDia, int rMes, int rAno, int rMod);
@@ -55,12 +55,17 @@ extern void verTarefas();
 extern int contTasks(char usuario[128]);
 extern int vData(int dia, int mes, int ano);
 extern int vHora(int hora, int min);
+extern void pausa(int seg);
 
 //Variáveis
 int menu = 0;
-int login = -1;
+int login = 0;
 
-// CódigoPrincipal
+#define LINHAS_ARQUIVO 10
+
+char matriz[LINHAS_ARQUIVO][256];
+
+// Código Principal
 int main() {
 
     carregarUsuarios();
@@ -223,7 +228,7 @@ void LoginUsuario(int id)
                         continue;
                     }
 
-                    if(strlen(rSenha) >= 120) {
+                    if(strlen(rEndereco) >= 120) {
                         Msg("O limite máximo de caracteres é 120.");
                         continue;
                     }
@@ -370,6 +375,7 @@ void telaSobre() {
     printf("///                                                                           ///\n");
     printf("/////////////////////////////////////////////////////////////////////////////////\n");
     printf("\n");
+    getchar();
     getchar();
     printf("\t\t\t>>> Aperte <ENTER> para voltar a tela inicial...\n");
     menu = 0;
@@ -528,7 +534,7 @@ void registrarUsuario(char rNome[128], char rCelular[12], char rCidade[128], cha
     else { //Usuário não existe
         sprintf(nome_arquivo, PASTA_USUARIOS, getLastUser(1));
     }
-    file = fopen(nome_arquivo, "w"); //Abrindo o arquivo
+    file = fopen(nome_arquivo, "wt"); //Abrindo o arquivo
 
     fprintf(file, "%s\n", rNome); //Nome Completo
     fprintf(file, "%s\n", rCelular); //Celular
@@ -570,7 +576,7 @@ int getLastUser(int modo)
         {
             FILE *file;
             sprintf(nome_arquivo, PASTA_USUARIOS, i);
-            file = fopen(nome_arquivo, "r");
+            file = fopen(nome_arquivo, "rt");
             if((file != NULL)) {
                 i++;
                 fclose(file);
@@ -615,8 +621,13 @@ int excluirUsuario(char usuario[32])
 
 void carregarUsuarios(void)
 {
-    char Lukas[256], nome_arquivo[50], strObtida[256], *intAux[10], *token;
-    int i, x = 0;
+    char ArquivoCompleto[512], 
+        nome_arquivo[50], 
+        strObtida[256], 
+        *intAux[10], 
+        *token;
+
+    int i, x;
 
     for(i = 0; i < MAX_USUARIOS; i++)
     {
@@ -624,9 +635,9 @@ void carregarUsuarios(void)
 
         sprintf(nome_arquivo, PASTA_USUARIOS, i);
         
-        if(abrirArquivo(nome_arquivo, Lukas))
+        if(abrirArquivo(nome_arquivo, ArquivoCompleto))
         {
-            token = strtok(Lukas, "\n");
+            token = strtok(ArquivoCompleto, "\n");
             while( token != NULL )
             {
                 sprintf(strObtida, "%s", token);
@@ -673,13 +684,44 @@ void carregarUsuarios(void)
     } //Fim do for
 }
 
+int openFile(char Arquivo[128])
+{
+    char texto[512], ArquivoCompleto[512], *token;
+    int i = 0;
+
+    strcpy(ArquivoCompleto, "");
+
+    for(i = 0; i < 10; i++) {
+        strcpy(matriz[i], "#");
+    }
+
+    FILE *file; //Criando variável para manipulação de arquivos
+    file = fopen(Arquivo, "rt"); //Abrindo o arquivo
+    if((file != NULL)) { //Se o arquivo existir
+        while(fgets(texto, sizeof(texto), file) != NULL) {
+            strcat(ArquivoCompleto, texto);
+        }
+    } 
+    else return 0;
+
+    token = strtok(ArquivoCompleto, "\n");
+    i = 0;
+    while( token != NULL ) {
+        strcpy(matriz[i], token);
+        token = strtok(NULL, "\n");
+        i++;
+    }
+    fclose(file);
+    return 1;
+}
+
 int abrirArquivo(char Arquivo[128], char* StrF)
 {
-    char texto[256];
+    char texto[512];
     strcpy(StrF, "");
 
     FILE *file; //Criando variável para manipulação de arquivos
-    file = fopen(Arquivo, "r");
+    file = fopen(Arquivo, "rt");
     if((file != NULL)) {
         while(fgets(texto, sizeof(texto), file) != NULL) {
             strcat(StrF, texto);
