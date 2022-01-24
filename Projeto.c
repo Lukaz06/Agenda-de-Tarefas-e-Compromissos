@@ -534,7 +534,7 @@ void registrarUsuario(char rNome[128], char rCelular[12], char rCidade[128], cha
     else { //Usuário não existe
         sprintf(nome_arquivo, PASTA_USUARIOS, getLastUser(1));
     }
-    file = fopen(nome_arquivo, "wt"); //Abrindo o arquivo
+    file = fopen(nome_arquivo, "wb"); //Abrindo o arquivo
 
     fprintf(file, "%s\n", rNome); //Nome Completo
     fprintf(file, "%s\n", rCelular); //Celular
@@ -576,7 +576,7 @@ int getLastUser(int modo)
         {
             FILE *file;
             sprintf(nome_arquivo, PASTA_USUARIOS, i);
-            file = fopen(nome_arquivo, "rt");
+            file = fopen(nome_arquivo, "rb");
             if((file != NULL)) {
                 i++;
                 fclose(file);
@@ -696,7 +696,7 @@ int openFile(char Arquivo[128])
     }
 
     FILE *file; //Criando variável para manipulação de arquivos
-    file = fopen(Arquivo, "rt"); //Abrindo o arquivo
+    file = fopen(Arquivo, "rb"); //Abrindo o arquivo
     if((file != NULL)) { //Se o arquivo existir
         while(fgets(texto, sizeof(texto), file) != NULL) {
             strcat(ArquivoCompleto, texto);
@@ -721,7 +721,7 @@ int abrirArquivo(char Arquivo[128], char* StrF)
     strcpy(StrF, "");
 
     FILE *file; //Criando variável para manipulação de arquivos
-    file = fopen(Arquivo, "rt");
+    file = fopen(Arquivo, "rb");
     if((file != NULL)) {
         while(fgets(texto, sizeof(texto), file) != NULL) {
             strcat(StrF, texto);

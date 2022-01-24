@@ -694,7 +694,7 @@ int getLastTask(int modo)
         {
             FILE *file;
             sprintf(nome_arquivo, PASTA_TAREFAS, i);
-            file = fopen(nome_arquivo, "r");
+            file = fopen(nome_arquivo, "rb");
             if((file != NULL)) {
                 i++;
                 fclose(file);
@@ -778,7 +778,7 @@ int registrarTarefa(char tUsuario[32], char tNome[128], int tDia, int tMes, int 
             sprintf(nome_arquivo, PASTA_TAREFAS, id_arq);
         }
         
-        file = fopen(nome_arquivo, "w"); //Abrindo o arquivo
+        file = fopen(nome_arquivo, "wb"); //Abrindo o arquivo
 
         fprintf(file, "%s\n", tUsuario); //Usuário
         fprintf(file, "%s\n", tNome); //Nome da Tarefa
